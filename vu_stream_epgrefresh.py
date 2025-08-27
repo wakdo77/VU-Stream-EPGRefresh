@@ -48,7 +48,7 @@ class VUStreamEPGRefresher:
         except Exception as e:
             return {'success': False, 'error': str(e)}
     
-    def find_services_without_epg(self, bouquet_name):
+    def find_services_without_epg(self, bouquet_name, max_events=0):
         """Findet Services ohne EPG-Daten - UNLIMITED"""
         print(f"🔍 Suche Services ohne EPG in '{bouquet_name}'...")
         
@@ -117,9 +117,9 @@ class VUStreamEPGRefresher:
                         if epg_result['success']:
                             events = epg_result['content'].count('<e2event>')
                         
-                        if events == 0:
+                        if events <= max_events:
                             services_without_epg.append({'ref': service_ref, 'name': service_name, 'events': events})
-                            print(f"  🔄 Braucht Refresh: {service_name}")
+                            print(f"  🔄 Braucht Refresh: {service_name} ( {events} Events )")
                         else:
                             services_with_epg.append({'ref': service_ref, 'name': service_name, 'events': events})
                             if len(services_with_epg) % 20 == 0:  # Status alle 20 Services
@@ -329,7 +329,7 @@ class VUStreamEPGRefresher:
         
         return successful > 0, total_new_events
     
-    def run(self, bouquet_name, duration=4.0):
+    def run(self, bouquet_name, duration=4.0, max_events=0):
         """Hauptfunktion"""
         print("="*70)
         print(f"VU+ STREAM EPG REFRESH - Sweet Spot: {duration}s")
@@ -339,7 +339,7 @@ class VUStreamEPGRefresher:
         print()
         
         # Services ohne EPG finden
-        services_to_refresh = self.find_services_without_epg(bouquet_name)
+        services_to_refresh = self.find_services_without_epg(bouquet_name, max_events=max_events)
         
         if not services_to_refresh:
             print("🎉 Alle Services haben bereits EPG-Daten!")
@@ -380,13 +380,20 @@ def main():
         print("🌊 Stream-Methode: Kein Zapping → Live-TV ungestört")
         print()
         print("Usage:")
-        print("  python vu_stream_epg.py <IP> bouquet <name> [--duration=X] [--force]")
+        print("  python vu_stream_epg.py <IP> bouquet <name> [--duration=X] [--max_events=Y] [--force]")
+        print()
+        print("Parameter:")
+        print("  --duration=X     Stream-Duration in Sekunden (0.5-30.0, Standard: 4.0)")
+        print("  --max_events=Y   Min. EPG-Events für Refresh (Standard: 0 = alle ohne EPG)")
+        print("  --force          Ohne Bestätigung ausführen")
+        print("  --debug          Debug-Ausgabe aktivieren")
         print()
         print("Beispiele:")
         print("  python vu_stream_epg.py 192.168.178.39 bouquet MyTV")
         print("  python vu_stream_epg.py 192.168.178.39 bouquet MyTV --duration=6.0")
+        print("  python vu_stream_epg.py 192.168.178.39 bouquet MyTV --max_events=5")
         print("  python vu_stream_epg.py 192.168.178.39 bouquet MyTV --force")
-        print("  python vu_stream_epg.py 192.168.178.39 bouquet MyTV --duration=2.0 --force")
+        print("  python vu_stream_epg.py 192.168.178.39 bouquet MyTV --duration=2.0 --max_events=3 --force")
         return
     
     host = sys.argv[1]
@@ -397,7 +404,8 @@ def main():
     force_mode = '--force' in sys.argv
     debug_mode = '--debug' in sys.argv
     duration = 4.0
-    
+    max_events = 0
+
     # Duration aus --duration=X extrahieren
     for arg in sys.argv:
         if arg.startswith('--duration='):
@@ -409,14 +417,20 @@ def main():
             except:
                 print(f"❌ Ungültige Duration: {arg}")
                 return
+        if arg.startswith('--max_events='):
+            try:
+                max_events = int(arg.split('=')[1])
+            except:
+                print(f"❌ Ungültige max_events: {arg}")
     
     print(f"🎯 Sweet Spot: {duration}s")
+    print(f"🎯 Max. Events: {max_events}")
     
     refresher = VUStreamEPGRefresher(host, force_mode=force_mode, debug_mode=debug_mode)
     
     try:
         if mode == 'bouquet':
-            success = refresher.run(name, duration)
+            success = refresher.run(name, duration, max_events=max_events)
         else:
             print(f"❌ Mode '{mode}' nicht unterstützt (nur 'bouquet')")
             success = False
