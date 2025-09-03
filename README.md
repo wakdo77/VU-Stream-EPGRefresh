@@ -7,6 +7,7 @@
 - **🔥 No Live-TV Interruption** - Stream fetching instead of zapping
 - **📺 Unlimited Channels** - Processes ALL channels in bouquet  
 - **🚫 Smart Channel Skipping** - Skip unwanted channels via string matching
+- **🔐 HTTP Basic Auth** - Optional username/password authentication
 - **⚡ Configurable Sweet Spot** - Tune duration (0.5s - 30s)
 - **🤖 Zero Dependencies** - Pure Python standard library
 - **⏰ Automation Ready** - Perfect for cron jobs
@@ -27,11 +28,17 @@ python vu_stream_epgrefresh.py 192.168.1.100 bouquet "Sky" --max_events=5
 # Skip specific channels (string matching)
 python vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --skip="Sky Sport,Sky Bundesliga"
 
+# With HTTP Basic Authentication
+python vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --username=admin --password=secret
+
 # Automated (for cron jobs)
 python vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --duration=4.0 --force
 
 # Combined: Fast refresh for channels with less than 3 EPG events, skip Sky channels
 python vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --duration=2.0 --max_events=3 --skip="Sky" --force
+
+# Full featured: Auth + Skip + Duration + Force
+python vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --username=admin --password=secret --duration=3.0 --skip="Adult,Test" --force
 ```
 
 ## 📋 Requirements
@@ -84,6 +91,34 @@ python vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --skip="Test,Demo,Pre
 - `--skip="HD"` überspringt alle HD-Kanäle
 - `--skip="Radio"` überspringt alle Radio-Sender
 
+## 🔐 HTTP Basic Authentication
+
+Für VU+/Dreambox Geräte mit aktiviertem Webinterface-Passwortschutz:
+
+**Parameter:**
+- `--username=USER` - HTTP Basic Auth Benutzername
+- `--password=PASS` - HTTP Basic Auth Passwort
+- Beide Parameter sind optional und nur nötig wenn Auth aktiviert
+
+**Beispiele:**
+```bash
+# Standard Auth (häufige Kombinationen)
+python vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --username=admin --password=admin
+python vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --username=root --password=dreambox
+
+# Custom Auth mit anderen Parametern
+python vu_stream_epgrefresh.py 192.168.1.100 bouquet "Sky" --username=myuser --password=mypass --duration=3.0
+
+# Auth + Skip kombiniert
+python vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --username=admin --password=secret --skip="Adult,Test"
+```
+
+**Hinweise:**
+- Funktioniert mit Standard HTTP Basic Authentication (RFC 7617)
+- Automatische URL-Kodierung: `http://user:pass@host:port`
+- Ohne Auth-Parameter funktioniert das Script wie gewohnt
+- Sichere Passwort-Übertragung nur bei HTTPS (meist nicht auf VU+ verfügbar)
+
 ## 🎢 EPG Filtering (max_events)
 
 Der `--max_events` Parameter ermöglicht intelligente EPG-Filterung:
@@ -118,11 +153,17 @@ python vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --max_events=20 --dur
 ```bash
 # Daily at 3:00 AM
 0 3 * * * cd /path/to/script && python3 vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --force
+
+# Mit HTTP Auth (empfohlen: Credentials in separater Config)
+0 3 * * * cd /path/to/script && python3 vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --username=admin --password=secret --force
 ```
 
 ### Windows Task Scheduler
 ```batch
-python C:\path\to\vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --force
+python C:\\path\\to\\vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --force
+
+REM Mit HTTP Auth
+python C:\\path\\to\\vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --username=admin --password=secret --force
 ```
 
 ## 📈 Sample Output

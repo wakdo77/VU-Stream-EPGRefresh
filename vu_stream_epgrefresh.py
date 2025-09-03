@@ -30,11 +30,19 @@ import threading
 import io
 
 class VUStreamEPGRefresher:
-    def __init__(self, host, port=80, force_mode=False, debug_mode=False, skip_strings=[]):
+    def __init__(self, host, username=None, password=None, port=80, force_mode=False, debug_mode=False, skip_strings=[]):
         self.host = host
         self.port = port
-        self.base_url = f'http://{host}:{port}'  # Web-Interface
-        self.stream_base_url = f'http://{host}:8001'  # BUGFIX: Stream-Server auf Port 8001
+        self.username = username
+        self.password = password
+
+        if username and password:
+            self.base_url = f'http://{username}:{password}@{host}:{port}'
+            self.stream_base_url = f'http://{username}:{password}@{host}:8001'
+        else:            
+            self.base_url = f'http://{host}:{port}'  # Web-Interface
+            self.stream_base_url = f'http://{host}:8001'  # BUGFIX: Stream-Server auf Port 8001
+
         self.force_mode = force_mode
         self.debug_mode = debug_mode
         # Skip-Strings für Kanal-Namen
@@ -394,11 +402,14 @@ def main():
         print("🌊 Stream-Methode: Kein Zapping → Live-TV ungestört")
         print()
         print("Usage:")
-        print("  python vu_stream_epg.py <IP> bouquet <name> [--duration=X] [--max_events=Y] [--force]")
+        print("  python vu_stream_epg.py <IP> bouquet <name> [--duration=X] [--max_events=Y] [--username=U] [--password=P] [--skip=\"A,B\"] [--force]")
         print()
         print("Parameter:")
         print("  --duration=X     Stream-Duration in Sekunden (0.5-30.0, Standard: 4.0)")
         print("  --max_events=Y   Min. EPG-Events für Refresh (Standard: 0 = alle ohne EPG)")
+        print("  --username=USER  HTTP Basic Auth Benutzername")  
+        print("  --password=PASS  HTTP Basic Auth Passwort")
+        print("  --skip=\"A,B,C\"    Kanäle überspringen, kommagetrennte Liste")
         print("  --force          Ohne Bestätigung ausführen")
         print("  --debug          Debug-Ausgabe aktivieren")
         print()
@@ -408,6 +419,8 @@ def main():
         print("  python vu_stream_epg.py 192.168.178.39 bouquet MyTV --max_events=5")
         print("  python vu_stream_epg.py 192.168.178.39 bouquet MyTV --force")
         print("  python vu_stream_epg.py 192.168.178.39 bouquet MyTV --duration=2.0 --max_events=3 --force")
+        print("  python vu_stream_epg.py 192.168.178.39 bouquet MyTV --username=admin --password=secret")
+        print("  python vu_stream_epg.py 192.168.178.39 bouquet MyTV --username=user --password=pass --skip=\"Sky Sport\"")
         return
     
     host = sys.argv[1]
@@ -448,7 +461,12 @@ def main():
                 print(f"🚫 Skip Strings: {skip_strings}")
             except:
                 print(f"❌ Ungültiger Skip-Parameter: {arg}")
-                return                
+                return  
+        if arg.startswith('--username='):
+            username = arg.split('=')[1] or None
+        if arg.startswith('--password='):  
+            password = arg.split('=')[1] or None
+              
     
     print(f"🎯 Sweet Spot: {duration}s")
     print(f"🎯 Max. Events: {max_events}")
