@@ -6,6 +6,7 @@
 
 - **🔥 No Live-TV Interruption** - Stream fetching instead of zapping
 - **📺 Unlimited Channels** - Processes ALL channels in bouquet  
+- **🚫 Smart Channel Skipping** - Skip unwanted channels via string matching
 - **⚡ Configurable Sweet Spot** - Tune duration (0.5s - 30s)
 - **🤖 Zero Dependencies** - Pure Python standard library
 - **⏰ Automation Ready** - Perfect for cron jobs
@@ -23,11 +24,14 @@ python vu_stream_epgrefresh.py 192.168.1.100 bouquet "Sky" --duration=2.0
 # Refresh only channels with less than 5 EPG events
 python vu_stream_epgrefresh.py 192.168.1.100 bouquet "Sky" --max_events=5
 
+# Skip specific channels (string matching)
+python vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --skip="Sky Sport,Sky Bundesliga"
+
 # Automated (for cron jobs)
 python vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --duration=4.0 --force
 
-# Combined: Fast refresh for channels with less than 3 EPG events
-python vu_stream_epgrefresh.py 192.168.1.100 bouquet "Sky" --duration=2.0 --max_events=3 --force
+# Combined: Fast refresh for channels with less than 3 EPG events, skip Sky channels
+python vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --duration=2.0 --max_events=3 --skip="Sky" --force
 ```
 
 ## 📋 Requirements
@@ -52,6 +56,33 @@ python vu_stream_epgrefresh.py 192.168.1.100 bouquet "Sky" --duration=2.0 --max_
 | **4.0s** | **Standard** ✅ | ⭐⭐⭐⭐ | 🚀🚀 |  
 | **6.0s** | Conservative | ⭐⭐⭐⭐⭐ | 🚀 |
 | **8.0s** | Maximum | ⭐⭐⭐⭐⭐ | 🐌 |
+
+## 🚫 Channel Skipping (--skip)
+
+Der `--skip` Parameter ermöglicht das Überspringen bestimmter Kanäle basierend auf String-Matching:
+
+**Funktionsweise:**
+- Kommagetrennte Liste von Suchstrings: `--skip="String1,String2,String3"`
+- Case-insensitive Substring-Matching im Kanalnamen
+- Kanal wird übersprungen wenn **einer** der Skip-Strings im Namen enthalten ist
+- Perfekt um problematische oder unwichtige Kanäle auszuschließen
+
+**Beispiele:**
+```bash
+# Sky Sport Kanäle überspringen
+python vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --skip="Sky Sport"
+
+# Mehrere Kategorien überspringen
+python vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --skip="Sky Sport,Sky Bundesliga,Adult"
+
+# Testkanäle und Demo-Kanäle ausschließen
+python vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --skip="Test,Demo,Preview"
+```
+
+**String-Matching Beispiele:**
+- `--skip="Sky Sport"` überspringt: "Sky Sport 1 HD", "Sky Sport 2", "Sky Sport News"
+- `--skip="HD"` überspringt alle HD-Kanäle
+- `--skip="Radio"` überspringt alle Radio-Sender
 
 ## 🎢 EPG Filtering (max_events)
 
@@ -117,6 +148,21 @@ Sweet Spot: 4.0s pro Service
 ...
 📊 ERGEBNIS: 43/45 erfolgreich
 🎯 Live-TV blieb ungestört! 127 neue EPG-Events
+```
+
+### Skip-Modus (--skip="Sky Sport")
+```
+🚫 Skip Strings: ['Sky Sport']
+🔍 Suche Services ohne EPG in 'All'...
+  📺 Bouquet gefunden: Alle Kanäle
+  📊 Lade alle Services aus Bouquet...
+  📺 BOUQUET 'All' ENTHÄLT 200 SERVICES TOTAL
+  🚫 Übersprungen: Sky Sport 1 HD (enthält 'Sky Sport')
+  🚫 Übersprungen: Sky Sport 2 HD (enthält 'Sky Sport')
+  🚫 Übersprungen: Sky Sport News HD (enthält 'Sky Sport')
+  🔄 Braucht Refresh: ARD HD ( 0 Events )
+  🔄 Braucht Refresh: ZDF HD ( 0 Events )
+  ✅ 15 Services mit EPG analysiert...
 ```
 
 ### Gefilterter Modus (max_events=5)

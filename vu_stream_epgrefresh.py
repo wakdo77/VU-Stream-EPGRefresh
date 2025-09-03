@@ -30,13 +30,15 @@ import threading
 import io
 
 class VUStreamEPGRefresher:
-    def __init__(self, host, port=80, force_mode=False, debug_mode=False):
+    def __init__(self, host, port=80, force_mode=False, debug_mode=False, skip_strings=[]):
         self.host = host
         self.port = port
         self.base_url = f'http://{host}:{port}'  # Web-Interface
         self.stream_base_url = f'http://{host}:8001'  # BUGFIX: Stream-Server auf Port 8001
         self.force_mode = force_mode
         self.debug_mode = debug_mode
+        # Skip-Strings für Kanal-Namen
+        self.skip_strings = skip_strings
         
     def _make_request(self, endpoint, timeout=10):
         """Einfacher HTTP Request"""
@@ -110,6 +112,18 @@ class VUStreamEPGRefresher:
                     # Nur echte TV/Radio Services
                     if service_ref.startswith('1:0:') and service_name != "<n/a>":
                         tv_radio_services += 1
+
+                        # Skip-Check: Prüfe ob Kanal-Name einen der Skip-Strings enthält
+                        should_skip = False
+                        for skip_string in self.skip_strings:
+                            if skip_string.lower() in service_name.lower():  # Case-insensitive contains
+                                should_skip = True
+                                print(f"  🚫 Übersprungen: {service_name} (enthält '{skip_string}')")
+                                break
+
+                        if should_skip:
+                            continue  # Service überspringen        
+
                         # EPG prüfen
                         epg_result = self._make_request(f'/web/epgservice?sRef={quote(service_ref, safe="")}')
                         events = 0
@@ -405,6 +419,7 @@ def main():
     debug_mode = '--debug' in sys.argv
     duration = 4.0
     max_events = 0
+    skip_strings = []  # Liste der Skip-Strings
 
     # Duration aus --duration=X extrahieren
     for arg in sys.argv:
@@ -422,11 +437,23 @@ def main():
                 max_events = int(arg.split('=')[1])
             except:
                 print(f"❌ Ungültige max_events: {arg}")
+        # Skip-Parameter parsing
+        if arg.startswith('--skip='):
+            try:
+                skip_argument = arg.split('=')[1]
+                # Anführungszeichen entfernen
+                skip_argument = skip_argument.strip('"\'')
+                # In Liste aufteilen (explode equivalent)
+                skip_strings = [s.strip() for s in skip_argument.split(',') if s.strip()]
+                print(f"🚫 Skip Strings: {skip_strings}")
+            except:
+                print(f"❌ Ungültiger Skip-Parameter: {arg}")
+                return                
     
     print(f"🎯 Sweet Spot: {duration}s")
     print(f"🎯 Max. Events: {max_events}")
-    
-    refresher = VUStreamEPGRefresher(host, force_mode=force_mode, debug_mode=debug_mode)
+    print(f"🚫 Skip Strings: {skip_strings}");
+    refresher = VUStreamEPGRefresher(host, force_mode=force_mode, debug_mode=debug_mode, skip_strings=skip_strings)
     
     try:
         if mode == 'bouquet':
