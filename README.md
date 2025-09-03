@@ -66,84 +66,84 @@ python vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --username=admin --pa
 
 ## 🚫 Channel Skipping (--skip)
 
-Der `--skip` Parameter ermöglicht das Überspringen bestimmter Kanäle basierend auf String-Matching:
+The `--skip` parameter allows skipping specific channels based on string matching:
 
-**Funktionsweise:**
-- Kommagetrennte Liste von Suchstrings: `--skip="String1,String2,String3"`
-- Case-insensitive Substring-Matching im Kanalnamen
-- Kanal wird übersprungen wenn **einer** der Skip-Strings im Namen enthalten ist
-- Perfekt um problematische oder unwichtige Kanäle auszuschließen
+**How it works:**
+- Comma-separated list of search strings: `--skip="String1,String2,String3"`
+- Case-insensitive substring matching in channel names
+- Channel is skipped if **any** of the skip strings is contained in the name
+- Perfect for excluding problematic or unwanted channels
 
-**Beispiele:**
+**Examples:**
 ```bash
-# Sky Sport Kanäle überspringen
+# Skip Sky Sport channels
 python vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --skip="Sky Sport"
 
-# Mehrere Kategorien überspringen
+# Skip multiple categories
 python vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --skip="Sky Sport,Sky Bundesliga,Adult"
 
-# Testkanäle und Demo-Kanäle ausschließen
+# Exclude test and demo channels
 python vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --skip="Test,Demo,Preview"
 ```
 
-**String-Matching Beispiele:**
-- `--skip="Sky Sport"` überspringt: "Sky Sport 1 HD", "Sky Sport 2", "Sky Sport News"
-- `--skip="HD"` überspringt alle HD-Kanäle
-- `--skip="Radio"` überspringt alle Radio-Sender
+**String-Matching Examples:**
+- `--skip="Sky Sport"` skips: "Sky Sport 1 HD", "Sky Sport 2", "Sky Sport News"
+- `--skip="HD"` skips all HD channels
+- `--skip="Radio"` skips all radio stations
 
 ## 🔐 HTTP Basic Authentication
 
-Für VU+/Dreambox Geräte mit aktiviertem Webinterface-Passwortschutz:
+For VU+/Dreambox devices with enabled web interface password protection:
 
-**Parameter:**
-- `--username=USER` - HTTP Basic Auth Benutzername
-- `--password=PASS` - HTTP Basic Auth Passwort
-- Beide Parameter sind optional und nur nötig wenn Auth aktiviert
+**Parameters:**
+- `--username=USER` - HTTP Basic Auth username
+- `--password=PASS` - HTTP Basic Auth password
+- Both parameters are optional and only needed when auth is enabled
 
-**Beispiele:**
+**Examples:**
 ```bash
-# Standard Auth (häufige Kombinationen)
+# Standard auth (common combinations)
 python vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --username=admin --password=admin
 python vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --username=root --password=dreambox
 
-# Custom Auth mit anderen Parametern
+# Custom auth with other parameters
 python vu_stream_epgrefresh.py 192.168.1.100 bouquet "Sky" --username=myuser --password=mypass --duration=3.0
 
-# Auth + Skip kombiniert
+# Auth + Skip combined
 python vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --username=admin --password=secret --skip="Adult,Test"
 ```
 
-**Hinweise:**
-- Funktioniert mit Standard HTTP Basic Authentication (RFC 7617)
-- Automatische URL-Kodierung: `http://user:pass@host:port`
-- Ohne Auth-Parameter funktioniert das Script wie gewohnt
-- Sichere Passwort-Übertragung nur bei HTTPS (meist nicht auf VU+ verfügbar)
+**Notes:**
+- Works with standard HTTP Basic Authentication (RFC 7617)
+- Automatic URL encoding: `http://user:pass@host:port`
+- Without auth parameters, the script works as usual
+- Secure password transmission only with HTTPS (usually not available on VU+)
 
 ## 🎢 EPG Filtering (max_events)
 
-Der `--max_events` Parameter ermöglicht intelligente EPG-Filterung:
+The `--max_events` parameter enables intelligent EPG filtering:
 
-**Funktionsweise:**
-- Standardwert: `0` = Alle Sender ohne EPG werden refreshed
-- Wert > 0: Nur Sender mit weniger als X EPG-Events werden refreshed
-- Verhindert unnötige Refreshs bei Sendern mit bereits vorhandenen EPG-Daten
+**How it works:**
+- Default value: `0` = All channels without EPG will be refreshed
+- Value > 0: Only channels with fewer than X EPG events will be refreshed
+- Prevents unnecessary refreshes on channels with existing EPG data
 
-| max_events | Verhalten | Anwendungsfall |
-|------------|-----------|----------------|
-| **0** | Alle ohne EPG ✅ | Standard-Modus |
-| **1-5** | Nur bei sehr wenig EPG | Feintuning |
-| **10-20** | Nur bei unvollständigem EPG | Performance-Optimierung |
-| **50+** | Fast alle Sender | Wartungsmodus |
+| max_events | Behavior | Use Case |
+|------------|----------|----------|
+| **0** | All without EPG ✅ | Standard mode |
+| **1-5** | Only with very little EPG | Fine tuning |
+| **10-20** | Only with incomplete EPG | Performance optimization |
+| **50+** | Almost all channels | Maintenance mode |
 
-**Beispiele:**
+**Examples:**
 ```bash
-# Nur völlig leere Sender (Standard)
+# Only completely empty channels (default)
 python vu_stream_epgrefresh.py 192.168.1.100 bouquet "Sky" --max_events=0
 
-# Sender mit weniger als 5 EPG-Events refreshen
+# Refresh channels with fewer than 5 EPG events
 python vu_stream_epgrefresh.py 192.168.1.100 bouquet "Sky" --max_events=5
 
-# Performance: Nur bei weniger als 20 Events refreshen
+# Performance: Only refresh when fewer than 20 events
 python vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --max_events=20 --duration=2.0
 ```
 
@@ -154,7 +154,7 @@ python vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --max_events=20 --dur
 # Daily at 3:00 AM
 0 3 * * * cd /path/to/script && python3 vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --force
 
-# Mit HTTP Auth (empfohlen: Credentials in separater Config)
+# With HTTP Auth (recommended: credentials in separate config)
 0 3 * * * cd /path/to/script && python3 vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --username=admin --password=secret --force
 ```
 
@@ -162,13 +162,13 @@ python vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --max_events=20 --dur
 ```batch
 python C:\\path\\to\\vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --force
 
-REM Mit HTTP Auth
+REM With HTTP Auth
 python C:\\path\\to\\vu_stream_epgrefresh.py 192.168.1.100 bouquet "All" --username=admin --password=secret --force
 ```
 
 ## 📈 Sample Output
 
-### Standard-Modus (max_events=0)
+### Standard Mode (max_events=0)
 ```
 🔍 Suche Services ohne EPG in 'Sky'...
   📺 Bouquet gefunden: Sky Deutschland HD
@@ -191,7 +191,7 @@ Sweet Spot: 4.0s pro Service
 🎯 Live-TV blieb ungestört! 127 neue EPG-Events
 ```
 
-### Skip-Modus (--skip="Sky Sport")
+### Skip Mode (--skip="Sky Sport")
 ```
 🚫 Skip Strings: ['Sky Sport']
 🔍 Suche Services ohne EPG in 'All'...
@@ -206,7 +206,7 @@ Sweet Spot: 4.0s pro Service
   ✅ 15 Services mit EPG analysiert...
 ```
 
-### Gefilterter Modus (max_events=5)
+### Filtered Mode (max_events=5)
 ```
 🔍 Suche Services ohne EPG in 'Sky'...
   📺 Bouquet gefunden: Sky Deutschland HD
