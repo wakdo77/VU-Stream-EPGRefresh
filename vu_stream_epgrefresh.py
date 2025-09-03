@@ -180,7 +180,7 @@ class VUStreamEPGRefresher:
         total_new_events = 0
         
         for i, service in enumerate(services):
-            print(f"[{i+1:2d}/{len(services)}] {service['name'][:40]:<40}", end=" ")
+            print(f"[{i+1:2d}/{len(services)}] {service['name'][:20]:<20}", end=" ")
             
             try:
                 encoded_ref = quote(service['ref'], safe='')
@@ -201,10 +201,12 @@ class VUStreamEPGRefresher:
                 
                 for j, stream_url in enumerate(stream_urls):
                     try:
+                        """
                         if self.debug_mode:
                             print(f"\n    🔗 URL {j+1}: {stream_url}")
                         else:
                             print(f"📡{j+1}", end=" ")
+                        """
                         
                         # BUGFIX: Erste URL über Port 8001 (Stream-Server), andere über Port 80 (Web-Interface)
                         if j == 0:  # Erste URL ist direkter Stream auf Port 8001
@@ -470,7 +472,7 @@ def main():
     
     print(f"🎯 Sweet Spot: {duration}s")
     print(f"🎯 Max. Events: {max_events}")
-    print(f"🚫 Skip Strings: {skip_strings}");
+
     refresher = VUStreamEPGRefresher(host, force_mode=force_mode, debug_mode=debug_mode, skip_strings=skip_strings)
     
     try:
