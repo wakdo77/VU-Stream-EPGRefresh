@@ -28,6 +28,7 @@ import xml.etree.ElementTree as ET
 from urllib.parse import quote
 import threading
 import io
+import base64
 
 class VUStreamEPGRefresher:
     def __init__(self, host, username=None, password=None, port=80, force_mode=False, debug_mode=False, skip_strings=[]):
@@ -36,12 +37,8 @@ class VUStreamEPGRefresher:
         self.username = username
         self.password = password
 
-        if username and password:
-            self.base_url = f'http://{username}:{password}@{host}:{port}'
-            self.stream_base_url = f'http://{username}:{password}@{host}:8001'
-        else:            
-            self.base_url = f'http://{host}:{port}'  # Web-Interface
-            self.stream_base_url = f'http://{host}:8001'  # BUGFIX: Stream-Server auf Port 8001
+        self.base_url = f'http://{host}:{port}'  # Web-Interface
+        self.stream_base_url = f'http://{host}:8001'  # Stream-Server auf Port 8001
 
         self.force_mode = force_mode
         self.debug_mode = debug_mode
@@ -49,10 +46,19 @@ class VUStreamEPGRefresher:
         self.skip_strings = skip_strings
         
     def _make_request(self, endpoint, timeout=10):
-        """Einfacher HTTP Request"""
+        """HTTP Request mit optionaler Basic Auth"""
         try:
-            url = self.base_url + endpoint
-            response = urllib.request.urlopen(url, timeout=timeout)
+            url = f'http://{self.host}:{self.port}' + endpoint
+            req = urllib.request.Request(url)
+            
+            # HTTP Basic Authentication hinzufügen falls vorhanden
+            if self.username and self.password:
+                credentials = f"{self.username}:{self.password}"
+                encoded = base64.b64encode(credentials.encode('utf-8')).decode('ascii')
+                req.add_header('Authorization', f'Basic {encoded}')
+                print(f"{self.username}: {encoded}")
+                
+            response = urllib.request.urlopen(req, timeout=timeout)
             content = response.read().decode('utf-8', errors='ignore')
             return {'success': True, 'content': content}
         except Exception as e:
@@ -216,6 +222,13 @@ class VUStreamEPGRefresher:
                             full_url = self.base_url + stream_url
                         
                         req = urllib.request.Request(full_url)
+                        
+                        # HTTP Basic Authentication hinzufügen falls vorhanden
+                        if self.username and self.password:
+                            credentials = f"{self.username}:{self.password}"
+                            encoded = base64.b64encode(credentials.encode('utf-8')).decode('ascii')
+                            req.add_header('Authorization', f'Basic {encoded}')
+                        
                         # BUGFIX: Verbesserte HTTP-Header für VU+ Kompatibilität
                         req.add_header('User-Agent', 'VLC/3.0.16 LibVLC/3.0.16')  # VLC für beste Kompatibilität
                         req.add_header('Accept', '*/*')
@@ -435,6 +448,8 @@ def main():
     duration = 4.0
     max_events = 0
     skip_strings = []  # Liste der Skip-Strings
+    username = None
+    password = None
 
     # Duration aus --duration=X extrahieren
     for arg in sys.argv:
@@ -473,7 +488,7 @@ def main():
     print(f"🎯 Sweet Spot: {duration}s")
     print(f"🎯 Max. Events: {max_events}")
 
-    refresher = VUStreamEPGRefresher(host, force_mode=force_mode, debug_mode=debug_mode, skip_strings=skip_strings)
+    refresher = VUStreamEPGRefresher(host, username=username, password=password, force_mode=force_mode, debug_mode=debug_mode, skip_strings=skip_strings)
     
     try:
         if mode == 'bouquet':
